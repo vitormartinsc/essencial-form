@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { TextField, Button, Container, Typography, Box, Link } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 function Login() {
   const [formData, setFormData] = useState({ username: '', password: '' });
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,7 +20,11 @@ function Login() {
         body: JSON.stringify(formData),
       });
       const data = await response.json();
-      alert(data.message || data.error);
+      if (data.message) {
+        navigate('/form'); // Redireciona para o formulário após login bem-sucedido
+      } else {
+        alert(data.error);
+      }
     } catch (error) {
       console.error('Error:', error);
     }
@@ -58,7 +64,7 @@ function Login() {
             Entrar
           </Button>
         </form>
-        <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+        <Typography variant="body2" align="center" sx={{ mt: 2, color: 'black' }}>
           Não possui uma conta? <Link href="/">Cadastre-se!</Link>
         </Typography>
       </Box>

@@ -2,8 +2,9 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Register from './Register';
 import Login from './Login';
+import Form from './Form';
 import './App.css';
-import logo from './crdito_essencial_cover.jpeg';
+import logo from './Quem Somos.png';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Register />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/form" element={<Form />} />
         </Routes>
       </Router>
     </div>
