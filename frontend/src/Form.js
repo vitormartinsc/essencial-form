@@ -2,6 +2,18 @@ import React, { useState } from 'react';
 import { TextField, Button, Container, Typography, Box, Stepper, Step, StepLabel } from '@mui/material';
 import axios from 'axios';
 
+function formatCep(value) {
+  // Remove tudo que não for número
+  value = value.replace(/\D/g, '');
+
+  // Adiciona o traço no formato 12345-678
+  if (value.length > 5) {
+    value = value.slice(0, 5) + '-' + value.slice(5, 8);
+  }
+
+  return value;
+}
+
 function Form() {
   const [formData, setFormData] = useState({
     fullName: '',
@@ -41,20 +53,34 @@ function Form() {
   };
 
   const handleCepChange = async (e) => {
-    const cep = e.target.value;
-    setFormData({ ...formData, cep });
+    const input = e.target;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
 
-    if (cep.length === 8) {
+    const formattedCep = formatCep(input.value);
+    setFormData((prevData) => {
+      const updatedData = { ...prevData, cep: formattedCep };
+
+      // Reposiciona o cursor corretamente
+      const diff = formattedCep.length - input.value.length;
+      input.setSelectionRange(start + diff, end + diff);
+
+      // Retorna os dados atualizados para o estado
+      return updatedData;
+    });
+
+    // Aguarda o CEP ser completamente formatado antes de buscar informações
+    if (formattedCep.length === 9) {
       try {
-        const response = await axios.get(`https://viacep.com.br/ws/${cep}/json/`);
+        const response = await axios.get(`https://viacep.com.br/ws/${formattedCep.replace('-', '')}/json/`);
         const { logradouro, bairro, localidade, uf } = response.data;
-        setFormData({
-          ...formData,
+        setFormData((prevData) => ({
+          ...prevData,
           endereco: logradouro || '',
           bairro: bairro || '',
           cidade: localidade || '',
           uf: uf || '',
-        });
+        }));
       } catch (error) {
         console.error('Erro ao buscar o CEP:', error);
       }
@@ -167,6 +193,8 @@ function Form() {
                   name="cep"
                   value={formData.cep || ''}
                   onChange={handleCepChange}
+                  placeholder="12345-678"
+                  inputProps={{ maxLength: 10 }}
                 />
                 <TextField
                   fullWidth
