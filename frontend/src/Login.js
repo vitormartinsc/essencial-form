@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextField, Button, Container, Typography, Box, Link } from '@mui/material';
+import { TextField, Button, Container, Typography, Box, Link, Alert, Stepper, Step, StepLabel } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
 function Login() {
@@ -36,6 +36,23 @@ function Login() {
         <Typography variant="h4" component="h1" gutterBottom>
           Login
         </Typography>
+        <Typography variant="h6" component="h2" gutterBottom>
+          Preencha seus dados
+        </Typography>
+        <Stepper activeStep={0} alternativeLabel>
+          <Step>
+            <StepLabel>1</StepLabel>
+          </Step>
+          <Step>
+            <StepLabel>2</StepLabel>
+          </Step>
+          <Step>
+            <StepLabel>3</StepLabel>
+          </Step>
+        </Stepper>
+        <Alert severity="warning" sx={{ mt: 2 }}>
+          É necessário possuir um cartão de crédito para realizar o empréstimo.
+        </Alert>
         <form onSubmit={handleLogin}>
           <TextField
             fullWidth
@@ -44,6 +61,7 @@ function Login() {
             name="username"
             value={formData.username}
             onChange={handleChange}
+            InputLabelProps={{ style: { zIndex: 1 } }}
           />
           <TextField
             fullWidth
@@ -53,6 +71,7 @@ function Login() {
             type="password"
             value={formData.password}
             onChange={handleChange}
+            InputLabelProps={{ style: { zIndex: 1 } }}
           />
           <Button
             fullWidth
@@ -61,7 +80,7 @@ function Login() {
             type="submit"
             sx={{ mt: 2 }}
           >
-            Entrar
+            Continuar
           </Button>
         </form>
         <Typography variant="body2" align="center" sx={{ mt: 2, color: 'black' }}>

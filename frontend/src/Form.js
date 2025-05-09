@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { TextField, Button, Container, Typography, Box, Stepper, Step, StepLabel } from '@mui/material';
+import { TextField, Button, Container, Typography, Box, Stepper, Step, StepLabel, Select, MenuItem, FormControlLabel, Checkbox } from '@mui/material';
 import axios from 'axios';
+import InputMask from 'react-input-mask';
 
 function formatCep(value) {
   // Remove tudo que não for número
@@ -19,7 +20,7 @@ function Form() {
     fullName: '',
     phone: '',
     cpf: '',
-    rg: '',
+    rg: '16.635.686',
     email: '',
     birthDate: '',
     gender: '',
@@ -34,7 +35,15 @@ function Form() {
     complemento: '',
     tipoResidencia: '',
     tempoResidencia: '',
+    limiteDisponivel: '',
+    valorEmprestimo: '',
+    bandeiraCartao: '',
+    confirmacao: false,
+    availableLimit: '',
+    requestedAmount: '',
   });
+
+  const [cepError, setCepError] = useState('');
 
   const steps = ['Informações Pessoais', 'Dados de Endereço', 'Finalizar'];
   const [activeStep, setActiveStep] = useState(0);
@@ -52,6 +61,10 @@ function Form() {
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleCheckboxChange = (e) => {
+    setFormData({ ...formData, confirmacao: e.target.checked });
+  };
+
   const handleCepChange = async (e) => {
     const input = e.target;
     const start = input.selectionStart;
@@ -65,23 +78,35 @@ function Form() {
       const diff = formattedCep.length - input.value.length;
       input.setSelectionRange(start + diff, end + diff);
 
-      // Retorna os dados atualizados para o estado
       return updatedData;
     });
 
-    // Aguarda o CEP ser completamente formatado antes de buscar informações
+    // Valida o formato do CEP
+    if (formattedCep.length === 9 && !/^\d{5}-\d{3}$/.test(formattedCep)) {
+      setCepError('CEP inválido. Use o formato 12345-678.');
+      return;
+    } else {
+      setCepError('');
+    }
+
+    // Busca informações do CEP se o formato for válido
     if (formattedCep.length === 9) {
       try {
         const response = await axios.get(`https://viacep.com.br/ws/${formattedCep.replace('-', '')}/json/`);
-        const { logradouro, bairro, localidade, uf } = response.data;
-        setFormData((prevData) => ({
-          ...prevData,
-          endereco: logradouro || '',
-          bairro: bairro || '',
-          cidade: localidade || '',
-          uf: uf || '',
-        }));
+        if (response.data.erro) {
+          setCepError('CEP não encontrado.');
+        } else {
+          const { logradouro, bairro, localidade, uf } = response.data;
+          setFormData((prevData) => ({
+            ...prevData,
+            endereco: logradouro || '',
+            bairro: bairro || '',
+            cidade: localidade || '',
+            uf: uf || '',
+          }));
+        }
       } catch (error) {
+        setCepError('Erro ao buscar o CEP. Tente novamente.');
         console.error('Erro ao buscar o CEP:', error);
       }
     }
@@ -120,25 +145,47 @@ function Form() {
                 fullWidth
                 label="Celular/WhatsApp"
                 name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                sx={{ flex: '1 1 45%' }}
+                value={formData.phone || ''}
+                onChange={(e) => {
+                  const formattedPhone = e.target.value
+                    .replace(/\D/g, '')
+                    .replace(/(\d{2})(\d{4,5})(\d{4})/, '($1) $2-$3')
+                    .slice(0, 15);
+                  handleChange({ target: { name: 'phone', value: formattedPhone } });
+                }}
+                sx={{
+                  flex: '1 1 45%',
+                }}
               />
-              <TextField
-                fullWidth
-                label="Cadastro de pessoa física (CPF)"
-                name="cpf"
+              <InputMask
+                mask="999.999.999-99"
                 value={formData.cpf}
-                onChange={handleChange}
-                sx={{ flex: '1 1 45%' }}
-              />
+                onChange={(e) => handleChange({ target: { name: 'cpf', value: e.target.value } })}
+              >
+                {() => (
+                  <TextField
+                    fullWidth
+                    label="CPF"
+                    name="cpf"
+                    sx={{ flex: '1 1 45%' }}
+                  />
+                )}
+              </InputMask>
               <TextField
                 fullWidth
-                label="Registro geral (RG)"
+                label="RG"
                 name="rg"
-                value={formData.rg}
-                onChange={handleChange}
-                sx={{ flex: '1 1 45%' }}
+                value={formData.rg || ''}
+                onChange={(e) => {
+                  const formattedRG = e.target.value
+                    .replace(/\D/g, '')
+                    .replace(/(\d{2})(\d{3})(\d{3})/, '$1.$2.$3')
+                    .slice(0, 10);
+                  handleChange({ target: { name: 'rg', value: formattedRG } });
+                }}
+                sx={{
+                  flex: '1 1 45%',
+                }}
               />
               <TextField
                 fullWidth
@@ -195,6 +242,8 @@ function Form() {
                   onChange={handleCepChange}
                   placeholder="12345-678"
                   inputProps={{ maxLength: 10 }}
+                  error={!!cepError}
+                  helperText={cepError}
                 />
                 <TextField
                   fullWidth
@@ -277,9 +326,70 @@ function Form() {
           )}
           {activeStep === 2 && (
             <>
-              <Typography variant="h5" component="h1" gutterBottom sx={{ mt: 3 }}>
-                Finalizar
+              <Typography variant="body1" color="error" gutterBottom sx={{ mt: 2 }}>
+                ⚠️ É necessário possuir um cartão de crédito para realizar o empréstimo.
               </Typography>
+              <TextField
+                fullWidth
+                margin="normal"
+                label="Limite disponível"
+                name="limiteDisponivel"
+                value={formData.limiteDisponivel}
+                onChange={handleChange}
+              />
+              <TextField
+                fullWidth
+                margin="normal"
+                label="Valor de empréstimo desejado"
+                name="valorEmprestimo"
+                value={formData.valorEmprestimo}
+                onChange={handleChange}
+              />
+              <TextField
+                fullWidth
+                label="Limite disponível (R$)"
+                name="availableLimit"
+                value={formData.availableLimit || ''}
+                onChange={handleChange}
+                sx={{
+                  flex: '1 1 45%',
+                }}
+              />
+              <TextField
+                fullWidth
+                label="Valor solicitado (R$)"
+                name="requestedAmount"
+                value={formData.requestedAmount || ''}
+                onChange={handleChange}
+                sx={{
+                  flex: '1 1 45%',
+                }}
+              />
+              <Select
+                fullWidth
+                margin="normal"
+                name="bandeiraCartao"
+                value={formData.bandeiraCartao}
+                onChange={handleChange}
+                displayEmpty
+              >
+                <MenuItem value="" disabled>
+                  Selecione a bandeira
+                </MenuItem>
+                <MenuItem value="Visa">Visa</MenuItem>
+                <MenuItem value="MasterCard">MasterCard</MenuItem>
+                <MenuItem value="Elo">Elo</MenuItem>
+              </Select>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={formData.confirmacao}
+                    onChange={handleCheckboxChange}
+                    name="confirmacao"
+                  />
+                }
+                label="Afirmo que possuo um cartão de crédito com limite disponível para realizar meu empréstimo."
+              />
             </>
           )}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', mt: 3 }}>
